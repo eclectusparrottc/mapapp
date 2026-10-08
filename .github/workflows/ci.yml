@@ -23,8 +23,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Runtime versions (tzdata matters: BC permanent UTC-7)
-        run: node -p "JSON.stringify({node: process.version, tz: process.versions.tz, icu: process.versions.icu})"
+      - name: "Runtime versions (tzdata matters: BC permanent UTC-7)"
+        run: |
+          node -p "JSON.stringify({node: process.version, tz: process.versions.tz, icu: process.versions.icu})"
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
