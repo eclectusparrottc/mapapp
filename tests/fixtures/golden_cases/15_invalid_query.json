@@ -1,0 +1,4 @@
+{ "name": "Before-mode without a next commitment is rejected as invalid input",
+  "query": { "mode": "before_next_plan", "now": "2026-10-11T00:45:00Z", "origin": {"label":"Downtown Vancouver (sample start)","lat":49.2811,"lng":-123.1145,"isSample":false} },
+  "candidates": [],
+  "expect": { "status": "invalid_query", "topIds": [] } }

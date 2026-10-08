@@ -1,0 +1,15 @@
+{ "name": "Unknown end time is never turned into a fixed duration",
+  "query": { "mode": "before_next_plan", "now": "2026-10-11T00:45:00Z", "origin": {"label":"Downtown Vancouver (sample start)","lat":49.2811,"lng":-123.1145,"isSample":false},
+             "nextCommitment": {"name":"Rogers Arena","location":{"lat":49.2778,"lng":-123.1089}, "startsAt": "2026-10-11T02:30:00Z", "arrivalBufferMinutes": 15 } },
+  "candidates": [
+    { "id": "busker_no_duration", "kind": "scheduled_event", "venue": "dt_plaza", "startsAt": "2026-10-11T01:00:00Z", "endsAt": null, "endQuality": "unknown", "durMin": null },
+    { "id": "sketch_min20", "kind": "scheduled_event", "venue": "dt_seawall", "startsAt": "2026-10-11T01:00:00Z", "endsAt": null, "endQuality": "unknown", "durMin": 20 },
+    { "id": "known_full", "kind": "scheduled_event", "venue": "dt_gallery", "startsAt": "2026-10-11T01:00:00Z", "endsAt": "2026-10-11T01:30:00Z", "durMin": 30 }
+  ],
+  "expect": { "status": "ok", "topIds": ["known_full", "sketch_min20", "busker_no_duration"],
+    "recs": {
+      "busker_no_duration": { "fit": "fits_partially", "confidence": "estimated_only", "unknownsInclude": ["end_time_unknown", "duration_unknown"] },
+      "sketch_min20": { "fit": "fits_partially", "confidence": "schedule_known_capacity_unknown", "unknownsInclude": ["end_time_unknown"], "unknownsExclude": ["duration_unknown"] },
+      "known_full": { "fit": "fits", "unknownsExclude": ["end_time_unknown", "duration_unknown"] }
+    },
+    "whyIncludes": { "busker_no_duration": "length unknown" } } }

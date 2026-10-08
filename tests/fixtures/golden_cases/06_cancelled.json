@@ -1,0 +1,9 @@
+{ "name": "Cancelled and postponed occurrences are excluded",
+  "query": { "mode": "free_time", "now": "2026-10-11T00:45:00Z", "origin": {"label":"Downtown Vancouver (sample start)","lat":49.2811,"lng":-123.1145,"isSample":false}, "freeMinutes": 90 },
+  "candidates": [
+    { "id": "choir_cancelled", "kind": "scheduled_event", "venue": "dt_gastown", "startsAt": "2026-10-11T01:00:00Z", "endsAt": "2026-10-11T01:30:00Z", "durMin": 30, "cancellation": "cancelled" },
+    { "id": "talk_postponed", "kind": "scheduled_event", "venue": "dt_library", "startsAt": "2026-10-11T01:00:00Z", "endsAt": "2026-10-11T01:30:00Z", "durMin": 30, "cancellation": "postponed" },
+    { "id": "garden", "venue": "dt_chinatown", "startsAt": "2026-10-10T17:00:00Z", "endsAt": "2026-10-11T03:00:00Z", "durMin": 20 }
+  ],
+  "expect": { "status": "ok", "topIds": ["garden"],
+    "rejected": { "choir_cancelled": ["cancelled"], "talk_postponed": ["postponed"] } } }

@@ -1,0 +1,9 @@
+# Minimal Supabase CLI config for local development of the CityGap dev project.
+project_id = "citygap-dev"
+
+[api]
+schemas = ["public"]
+max_rows = 200
+
+[functions.activities-api]
+verify_jwt = false

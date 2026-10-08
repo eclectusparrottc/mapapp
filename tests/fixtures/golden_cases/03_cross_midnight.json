@@ -1,0 +1,10 @@
+{ "name": "Free 120 min starting 23:30 local; event spans midnight",
+  "query": { "mode": "free_time", "now": "2026-10-11T06:30:00Z", "origin": {"label":"Downtown Vancouver (sample start)","lat":49.2811,"lng":-123.1145,"isSample":false}, "freeMinutes": 120 },
+  "candidates": [
+    { "id": "late_comedy", "kind": "scheduled_event", "venue": "dt_granville", "startsAt": "2026-10-11T06:45:00Z", "endsAt": "2026-10-11T08:00:00Z", "durMin": 45, "categories": ["nightlife"] },
+    { "id": "closing_soon", "venue": "dt_chinatown", "startsAt": "2026-10-10T18:30:00Z", "endsAt": "2026-10-11T06:50:00Z", "durMin": 20 },
+    { "id": "ended_yesterday", "kind": "scheduled_event", "venue": "dt_plaza", "startsAt": "2026-10-11T04:00:00Z", "endsAt": "2026-10-11T05:00:00Z", "durMin": 30 }
+  ],
+  "expect": { "status": "ok", "topIds": ["late_comedy"],
+    "rejected": { "closing_soon": ["closes_too_soon"], "ended_yesterday": ["already_ended"] },
+    "whyIncludes": { "late_comedy": "starts 11:45 PM PDT" } } }

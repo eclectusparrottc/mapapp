@@ -1,0 +1,5 @@
+{ "name": "External source timeout degrades to an explicit error, never fake results",
+  "query": { "mode": "free_time", "now": "2026-10-11T00:45:00Z", "origin": {"label":"Downtown Vancouver (sample start)","lat":49.2811,"lng":-123.1145,"isSample":false}, "freeMinutes": 60 },
+  "loader": "timeout",
+  "candidates": [],
+  "expect": { "status": "source_unavailable", "topIds": [], "suggestionsInclude": ["try_later", "use_list_fallback"] } }

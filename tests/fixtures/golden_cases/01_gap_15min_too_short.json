@@ -1,0 +1,5 @@
+{ "name": "15 minutes before the arrival deadline is too short",
+  "query": { "mode": "before_next_plan", "now": "2026-10-11T01:45:00Z", "origin": {"label":"Downtown Vancouver (sample start)","lat":49.2811,"lng":-123.1145,"isSample":false},
+             "nextCommitment": {"name":"Rogers Arena","location":{"lat":49.2778,"lng":-123.1089}, "startsAt": "2026-10-11T02:15:00Z", "arrivalBufferMinutes": 15 } },
+  "candidates": [ { "id": "coffee", "venue": "dt_concourse", "startsAt": "2026-10-10T14:00:00Z", "endsAt": "2026-10-11T04:00:00Z", "durMin": 15 } ],
+  "expect": { "status": "window_too_short", "topIds": [], "windowMinutes": 15 } }

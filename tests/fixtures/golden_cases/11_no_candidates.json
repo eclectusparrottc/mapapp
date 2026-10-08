@@ -1,0 +1,9 @@
+{ "name": "Nothing fits: honest empty result with suggestions",
+  "query": { "mode": "free_time", "now": "2026-10-11T00:45:00Z", "origin": {"label":"Downtown Vancouver (sample start)","lat":49.2811,"lng":-123.1145,"isSample":false}, "freeMinutes": 30 },
+  "candidates": [
+    { "id": "richmond", "venue": "rm_park", "startsAt": "2026-10-10T13:00:00Z", "endsAt": "2026-10-11T05:00:00Z", "durMin": 20 },
+    { "id": "too_long", "kind": "bookable_slot", "venue": "dt_gallery", "startsAt": "2026-10-11T01:00:00Z", "endsAt": "2026-10-11T02:00:00Z", "durMin": 60 }
+  ],
+  "expect": { "status": "no_candidates", "topIds": [],
+    "rejected": { "richmond": ["too_far"], "too_long": ["not_enough_time"] },
+    "suggestionsInclude": ["extend_time", "widen_area"] } }

@@ -1,0 +1,13 @@
+{ "name": "Sold out is excluded; tickets-on-sale is not 'available'; expired 'full' snapshot becomes unknown",
+  "query": { "mode": "free_time", "now": "2026-10-11T00:45:00Z", "origin": {"label":"Downtown Vancouver (sample start)","lat":49.2811,"lng":-123.1145,"isSample":false}, "freeMinutes": 90 },
+  "candidates": [
+    { "id": "trivia_full", "kind": "scheduled_event", "venue": "dt_concourse", "startsAt": "2026-10-11T01:00:00Z", "endsAt": "2026-10-11T01:45:00Z", "durMin": 45, "booking": "full", "requiresBooking": true },
+    { "id": "film_on_sale", "kind": "scheduled_event", "venue": "dt_granville", "startsAt": "2026-10-11T01:00:00Z", "endsAt": "2026-10-11T01:50:00Z", "durMin": 50, "booking": "sales_open_not_inventory", "requiresBooking": true },
+    { "id": "escape_stale_full", "kind": "bookable_slot", "venue": "dt_gastown", "startsAt": "2026-10-11T01:15:00Z", "endsAt": "2026-10-11T01:55:00Z", "durMin": 40, "booking": "full", "expiresAt": "2026-10-11T00:00:00Z", "requiresBooking": true }
+  ],
+  "expect": { "status": "ok", "includes": ["film_on_sale", "escape_stale_full"],
+    "rejected": { "trivia_full": ["full"] },
+    "recs": {
+      "film_on_sale": { "fit": "fits", "confidence": "schedule_known_capacity_unknown", "bookingState": "sales_open_not_inventory", "unknownsInclude": ["capacity_not_verified", "booking_required"] },
+      "escape_stale_full": { "bookingState": "unknown", "unknownsInclude": ["availability_snapshot_expired", "capacity_not_verified"] }
+    } } }

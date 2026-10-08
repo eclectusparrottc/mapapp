@@ -1,0 +1,7 @@
+{ "name": "Third-party records with unverified display rights never reach users",
+  "query": { "mode": "free_time", "now": "2026-10-11T00:45:00Z", "origin": {"label":"Downtown Vancouver (sample start)","lat":49.2811,"lng":-123.1145,"isSample":false}, "freeMinutes": 90 },
+  "candidates": [
+    { "id": "scraped", "kind": "scheduled_event", "venue": "dt_plaza", "startsAt": "2026-10-11T01:00:00Z", "endsAt": "2026-10-11T01:30:00Z", "durMin": 30, "permission": "unverified", "url": "https://example.org/x" },
+    { "id": "denied", "kind": "scheduled_event", "venue": "dt_plaza", "startsAt": "2026-10-11T01:10:00Z", "endsAt": "2026-10-11T01:30:00Z", "durMin": 20, "permission": "denied" }
+  ],
+  "expect": { "status": "no_candidates", "rejected": { "scraped": ["permission_not_public"], "denied": ["permission_not_public"] } } }

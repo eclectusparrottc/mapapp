@@ -1,0 +1,7 @@
+{ "name": "Location denied: sample start is used and clearly labeled",
+  "query": { "mode": "free_time", "now": "2026-10-11T00:45:00Z", "freeMinutes": 60,
+             "origin": { "label": "Downtown Vancouver (sample start)", "lat": 49.2811, "lng": -123.1145, "isSample": true } },
+  "candidates": [ { "id": "reading", "venue": "dt_library", "startsAt": "2026-10-10T16:30:00Z", "endsAt": "2026-10-11T03:00:00Z", "durMin": 20 } ],
+  "expect": { "status": "ok", "topIds": ["reading"],
+    "recs": { "reading": { "unknownsInclude": ["start_location_is_sample"] } },
+    "notesInclude": ["sample location"] } }

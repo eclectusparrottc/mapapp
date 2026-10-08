@@ -1,0 +1,7 @@
+{ "name": "Same occurrence from two feeds yields one result (fresher record wins)",
+  "query": { "mode": "free_time", "now": "2026-10-11T00:45:00Z", "origin": {"label":"Downtown Vancouver (sample start)","lat":49.2811,"lng":-123.1145,"isSample":false}, "freeMinutes": 90 },
+  "candidates": [
+    { "id": "dance_feed_a", "title": "[DEMO] Plaza Line-Dance Class", "kind": "scheduled_event", "venue": "dt_plaza", "startsAt": "2026-10-11T01:00:00Z", "endsAt": "2026-10-11T01:45:00Z", "durMin": 45, "lastSourceUpdate": "2026-10-09T10:00:00Z" },
+    { "id": "dance_feed_b", "title": "Plaza line-dance class!", "kind": "scheduled_event", "venue": "dt_plaza", "startsAt": "2026-10-11T01:00:00Z", "endsAt": "2026-10-11T01:45:00Z", "durMin": 45, "lastSourceUpdate": "2026-10-10T10:00:00Z", "sourceName": "feed-b" }
+  ],
+  "expect": { "status": "ok", "topIds": ["dance_feed_b"], "rejected": { "dance_feed_a": ["duplicate"] } } }

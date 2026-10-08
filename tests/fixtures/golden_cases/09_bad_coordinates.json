@@ -1,0 +1,10 @@
+{ "name": "Missing, zero and swapped coordinates never get a distance ranking",
+  "query": { "mode": "free_time", "now": "2026-10-11T00:45:00Z", "origin": {"label":"Downtown Vancouver (sample start)","lat":49.2811,"lng":-123.1145,"isSample":false}, "freeMinutes": 90 },
+  "candidates": [
+    { "id": "tba", "venue": "bad_missing", "startsAt": "2026-10-10T17:00:00Z", "endsAt": "2026-10-11T03:00:00Z", "durMin": 20 },
+    { "id": "zero", "venue": "bad_zero", "startsAt": "2026-10-10T17:00:00Z", "endsAt": "2026-10-11T03:00:00Z", "durMin": 20 },
+    { "id": "swapped", "venue": { "lat": -123.1145, "lng": 49.2811 }, "startsAt": "2026-10-10T17:00:00Z", "endsAt": "2026-10-11T03:00:00Z", "durMin": 20 },
+    { "id": "good", "venue": "dt_library", "startsAt": "2026-10-10T17:00:00Z", "endsAt": "2026-10-11T03:00:00Z", "durMin": 20 }
+  ],
+  "expect": { "status": "ok", "topIds": ["good"],
+    "rejected": { "tba": ["missing_coordinates"], "zero": ["invalid_coordinates"], "swapped": ["invalid_coordinates"] } } }
