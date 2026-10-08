@@ -8,6 +8,25 @@ export const DISPLAY_TZ = "America/Vancouver";
 
 export const MINUTE_MS = 60_000;
 
+/**
+ * British Columbia moved to permanent UTC-7 ("Pacific time"): the last clock change was the
+ * 2026-03-08 spring-forward and the 2026-11-01 fall-back does not happen. Runtimes and browsers
+ * with tzdata older than that change would show Vancouver times one hour early from November 2026,
+ * so from that instant we pin America/Vancouver to a fixed UTC-7 offset (see ADR-006).
+ * Remove once all supported browsers ship tzdata containing the change.
+ */
+export const BC_PERMANENT_UTC_MINUS_7_FROM = Date.parse("2026-03-08T10:00:00Z");
+
+function effectiveZone(epochMs: number, timeZone: string): string {
+  return timeZone === DISPLAY_TZ && epochMs >= BC_PERMANENT_UTC_MINUS_7_FROM ? "Etc/GMT+7" : timeZone;
+}
+
+/** Does this runtime's own tzdata already know about BC's permanent UTC-7? (diagnostics only) */
+export function runtimeKnowsBcPermanentTime(): boolean {
+  const p = partsInZone(Date.parse("2026-12-15T20:00:00Z"), DISPLAY_TZ, false);
+  return p.hour === 13;
+}
+
 export function addMinutes(iso: string, minutes: number): string {
   return new Date(Date.parse(iso) + minutes * MINUTE_MS).toISOString();
 }
@@ -16,9 +35,9 @@ export function minutesBetween(fromIso: string, toIso: string): number {
   return (Date.parse(toIso) - Date.parse(fromIso)) / MINUTE_MS;
 }
 
-function partsInZone(epochMs: number, timeZone: string) {
+function partsInZone(epochMs: number, timeZone: string, applyBcRule = true) {
   const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone,
+    timeZone: applyBcRule ? effectiveZone(epochMs, timeZone) : timeZone,
     hourCycle: "h23",
     year: "numeric",
     month: "2-digit",
@@ -82,26 +101,45 @@ export function localToUtc(local: string, timeZone: string = DISPLAY_TZ): LocalT
   return { kind: "nonexistent", utc: new Date(wallAsUtc - before * MINUTE_MS).toISOString() };
 }
 
+function zoneLabel(epochMs: number, timeZone: string): string {
+  const native = new Intl.DateTimeFormat("en-US", { timeZone, timeZoneName: "short" })
+    .formatToParts(new Date(epochMs))
+    .find((p) => p.type === "timeZoneName")?.value;
+  const zone = effectiveZone(epochMs, timeZone);
+  if (zone === timeZone) return native ?? timeZone;
+  // Pinned BC rule: keep the runtime's own label only if its tzdata agrees on the offset.
+  const nativeOffset = zoneOffsetMinutesNative(epochMs, timeZone);
+  return nativeOffset === -420 && native ? native : "GMT-7";
+}
+
+function zoneOffsetMinutesNative(epochMs: number, timeZone: string): number {
+  const p = partsInZone(epochMs, timeZone, false);
+  const asUtc = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+  return Math.round((asUtc - Math.floor(epochMs / 1000) * 1000) / MINUTE_MS);
+}
+
 /** e.g. "7:30 PM PDT". Always includes the zone so users never see a bare UTC-derived time. */
 export function formatLocalTime(iso: string, timeZone: string = DISPLAY_TZ): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone,
+  const epochMs = Date.parse(iso);
+  const time = new Intl.DateTimeFormat("en-US", {
+    timeZone: effectiveZone(epochMs, timeZone),
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
-    timeZoneName: "short",
   })
-    .format(new Date(iso))
-    .replace(/\s+/g, " ")
-    .replace(/a\.m\./i, "AM")
-    .replace(/p\.m\./i, "PM");
+    .format(new Date(epochMs))
+    .replace(/\s+/g, " ");
+  return `${time} ${zoneLabel(epochMs, timeZone)}`;
 }
 
 /** e.g. "Sat, Oct 10, 7:30 PM PDT". */
 export function formatLocalDateTime(iso: string, timeZone: string = DISPLAY_TZ): string {
-  const date = new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short", month: "short", day: "numeric" }).format(
-    new Date(iso),
-  );
+  const date = new Intl.DateTimeFormat("en-US", {
+    timeZone: effectiveZone(Date.parse(iso), timeZone),
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(iso));
   return `${date}, ${formatLocalTime(iso, timeZone)}`;
 }
 

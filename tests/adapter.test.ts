@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { csvAdapter, parseCsv } from "../src/adapters/csv";
+import { CSV_COLUMNS, csvAdapter, normalizeCsvRow, parseCsv } from "../src/adapters/csv";
 import { InMemoryStore, runSync, SyncAlreadyRunningError } from "../src/adapters/sync";
 import { recommendFromCandidates } from "../src/engine/feasibility";
 
@@ -13,7 +13,7 @@ describe("curated CSV adapter", () => {
   it("accepts good rows, rejects bad rows with classified reasons", async () => {
     const store = new InMemoryStore();
     const { run, rows } = await runSync(adapter(), store, { now: NOW });
-    const byId = (id: string) => rows.filter((r) => r.externalId?.startsWith(id) || (r.externalId === null && false));
+    const byId = (id: string) => rows.filter((r) => r.externalId?.startsWith(id));
     const rejectedCodes = rows.filter((r) => !r.accepted).map((r) => r.issues.filter((i) => i.severity === "reject").map((i) => i.code));
 
     expect(run.received_count).toBe(14);
@@ -38,13 +38,25 @@ describe("curated CSV adapter", () => {
       cancelled: 1,
       missing_coordinates: 1,
       license_unknown: 1,
-      ambiguous_local_time: 1,
     });
+    expect(run.error_summary.ambiguous_local_time).toBeUndefined();
     expect(byId("csv-gallery")).toHaveLength(2);
     expect(store.syncRuns).toHaveLength(1);
   });
 
-  it("stores UTC and keeps the original timezone; DST-ambiguous time uses the earlier instant", async () => {
+  it("flags DST-ambiguous local times and uses the earlier instant", () => {
+    const row = Object.fromEntries(CSV_COLUMNS.map((c) => [c, ""])) as Record<(typeof CSV_COLUMNS)[number], string>;
+    Object.assign(row, {
+      external_id: "amb", occurrence_key: "k", title: "Ambiguous", kind: "scheduled_event", categories: "music",
+      venue_external_id: "v", venue_name: "V", lat: "49.28", lng: "-123.11",
+      timezone: "America/Los_Angeles", starts_at_local: "2026-11-01T01:30", data_permission_status: "synthetic",
+    });
+    const { record, issues } = normalizeCsvRow("t", row, { now: NOW });
+    expect(issues.map((i) => i.code)).toContain("ambiguous_local_time");
+    expect(record?.occurrence.starts_at_utc).toBe("2026-11-01T08:30:00.000Z");
+  });
+
+  it("stores UTC and keeps the original timezone (BC: 2026-11-01 01:30 is a single instant)", async () => {
     const store = new InMemoryStore();
     await runSync(adapter(), store, { now: NOW });
     const talk = store.occurrences.get("curated-csv:csv-talk:2026-10-12T12:15")!;

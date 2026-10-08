@@ -1,0 +1,7 @@
+{ "name": "2026-11-01: BC no longer falls back; 09:30Z is 2:30 AM (UTC-7), not 1:30 AM PST",
+  "query": { "mode": "free_time", "now": "2026-11-01T08:40:00Z", "origin": {"label":"Downtown Vancouver (sample start)","lat":49.2811,"lng":-123.1145,"isSample":false}, "freeMinutes": 90 },
+  "candidates": [
+    { "id": "night_set", "kind": "scheduled_event", "venue": "dt_granville", "startsAt": "2026-11-01T09:30:00Z", "endsAt": "2026-11-01T10:15:00Z", "durMin": 30 }
+  ],
+  "expect": { "status": "ok", "topIds": ["night_set"],
+    "whyIncludes": { "night_set": "starts 2:30 AM" } } }
