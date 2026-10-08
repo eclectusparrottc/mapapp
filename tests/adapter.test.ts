@@ -95,6 +95,27 @@ describe("curated CSV adapter", () => {
     expect(res.rejected.find((r) => r.occurrenceId.includes("csv-thirdparty"))?.reasons).toEqual(["permission_not_public"]);
   });
 
+  it("retires records that disappear from a full-snapshot source, but not on a failed fetch", async () => {
+    const store = new InMemoryStore();
+    await runSync(adapter(), store, { now: NOW });
+    const withoutTalk = csvText
+      .split("\n")
+      .filter((l) => !l.startsWith("csv-talk,"))
+      .join("\n");
+    const { run } = await runSync(csvAdapter("curated-csv", async () => withoutTalk), store, { now: "2026-10-10T13:00:00Z" });
+    expect(run.retired_count).toBe(1);
+    expect(store.toCandidates().map((c) => c.occurrenceId)).not.toContain("curated-csv:csv-talk:2026-10-12T12:15");
+
+    const failing = csvAdapter("curated-csv", async () => {
+      throw new Error("network");
+    });
+    const before = store.toCandidates().length;
+    const { run: failed } = await runSync(failing, store, { now: "2026-10-10T14:00:00Z" });
+    expect(failed.status).toBe("failed");
+    expect(failed.retired_count).toBe(0);
+    expect(store.toCandidates()).toHaveLength(before);
+  });
+
   it("records a failed run when the source cannot be fetched", async () => {
     const store = new InMemoryStore();
     const broken = csvAdapter("broken-src", async () => {

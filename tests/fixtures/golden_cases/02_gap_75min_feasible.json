@@ -4,7 +4,7 @@
   "candidates": [
     { "id": "coffee", "title": "Espresso Bar", "venue": "dt_concourse", "startsAt": "2026-10-10T14:00:00Z", "endsAt": "2026-10-11T04:00:00Z", "durMin": 15, "categories": ["food_drink"] },
     { "id": "gallery", "title": "Mini Gallery", "venue": "dt_gallery", "startsAt": "2026-10-10T17:00:00Z", "endsAt": "2026-10-11T03:00:00Z", "durMin": 25 },
-    { "id": "climb", "title": "Climbing Taster", "kind": "bookable_slot", "venue": "dt_plaza", "startsAt": "2026-10-11T00:55:00Z", "endsAt": "2026-10-11T01:40:00Z", "durMin": 45, "requiresBooking": true, "categories": ["sports"] },
+    { "id": "climb", "title": "Climbing Taster", "kind": "bookable_slot", "venue": "dt_plaza", "startsAt": "2026-10-11T01:00:00Z", "endsAt": "2026-10-11T01:40:00Z", "durMin": 40, "requiresBooking": true, "categories": ["sports"] },
     { "id": "film_started", "title": "Short Films", "kind": "scheduled_event", "venue": "dt_granville", "startsAt": "2026-10-11T00:15:00Z", "endsAt": "2026-10-11T01:05:00Z", "durMin": 50 },
     { "id": "richmond_far", "title": "Richmond Park Loop", "venue": "rm_park", "startsAt": "2026-10-10T13:00:00Z", "endsAt": "2026-10-11T05:00:00Z", "durMin": 20 }
   ],

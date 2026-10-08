@@ -210,6 +210,9 @@ export function normalizeCsvRow(
     reject("expired_source", "ends_at_local", "occurrence already ended");
   }
 
+  const summary = opt(row.short_summary) ?? "";
+  if (summary.length > 280) flag("invalid_value", "short_summary", "longer than 280 chars; truncated (link to source for details)");
+
   if (issues.some((i) => i.severity === "reject")) return { record: null, issues };
 
   const activityId = `${sourceName}:${externalId}`;
@@ -225,7 +228,7 @@ export function normalizeCsvRow(
         title: title!,
         kind: k,
         category: parsedCats.success ? parsedCats.data : [],
-        short_summary: (opt(row.short_summary) ?? "").slice(0, 280),
+        short_summary: summary.slice(0, 280),
         duration_min_minutes: durMin as number | null,
         duration_max_minutes: durMax as number | null,
         venue_id: venueId,
@@ -277,6 +280,7 @@ export function csvAdapter(sourceName: string, readText: () => Promise<string>):
   if (!SAFE_ID.test(sourceName)) throw new Error(`unsafe source name ${sourceName}`);
   return {
     sourceName,
+    fullSnapshot: true,
     async fetch() {
       return parseCsv(await readText());
     },

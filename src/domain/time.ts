@@ -1,7 +1,8 @@
 /**
  * Time rules (ADR-006): compute in UTC, display in America/Vancouver with the zone
  * abbreviation, and treat local wall-clock input as potentially ambiguous (DST fall-back)
- * or non-existent (DST spring-forward). No date library: Intl is DST-correct.
+ * or non-existent (DST spring-forward) — relevant for historical BC data and other zones.
+ * BC itself is on permanent UTC-7 from 2026-03-08 (see BC_PERMANENT_UTC_MINUS_7_FROM).
  */
 
 export const DISPLAY_TZ = "America/Vancouver";
@@ -17,8 +18,11 @@ export const MINUTE_MS = 60_000;
  */
 export const BC_PERMANENT_UTC_MINUS_7_FROM = Date.parse("2026-03-08T10:00:00Z");
 
+/** IANA names that resolve to the same BC rules. */
+const BC_PACIFIC_ZONES = new Set([DISPLAY_TZ, "Canada/Pacific"]);
+
 function effectiveZone(epochMs: number, timeZone: string): string {
-  return timeZone === DISPLAY_TZ && epochMs >= BC_PERMANENT_UTC_MINUS_7_FROM ? "Etc/GMT+7" : timeZone;
+  return BC_PACIFIC_ZONES.has(timeZone) && epochMs >= BC_PERMANENT_UTC_MINUS_7_FROM ? "Etc/GMT+7" : timeZone;
 }
 
 /** Does this runtime's own tzdata already know about BC's permanent UTC-7? (diagnostics only) */
@@ -53,7 +57,7 @@ function partsInZone(epochMs: number, timeZone: string, applyBcRule = true) {
   return p as { year: number; month: number; day: number; hour: number; minute: number; second: number };
 }
 
-/** Offset (minutes) of `timeZone` from UTC at the given instant. Vancouver: -420 (PDT) or -480 (PST). */
+/** Offset (minutes) of `timeZone` from UTC at the given instant. Vancouver: -420 (PDT / permanent UTC-7 from 2026-03-08) or -480 (PST, before then). */
 export function zoneOffsetMinutes(epochMs: number, timeZone: string): number {
   const p = partsInZone(epochMs, timeZone);
   const asUtc = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);

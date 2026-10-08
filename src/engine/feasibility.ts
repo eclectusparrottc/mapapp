@@ -20,9 +20,11 @@ import {
  *   require projected_finish + travel_to_next + safety_margin <= hard_deadline
  *   and projected_finish <= activity end / closing time (when known)
  *
- * Unknown queueing / booking is never assumed to be zero, and an unknown end time is never
- * turned into a fixed duration: when we must assume a minimum stay to check timing, the result
- * is downgraded to `fits_partially` + `estimated_only` and the assumption is listed in `unknowns`.
+ * Unknown check-in/booking time is never assumed to be zero: when booking is required or unknown
+ * and capacity is not verified, `unconfirmedBookingAllowanceMinutes` is added before the activity
+ * can start, and the unknown is listed. An unknown end time is never turned into a fixed duration:
+ * when we must assume a minimum stay to check timing, the result is downgraded to `fits_partially`
+ * + `estimated_only` and the assumption is listed in `unknowns`.
  */
 
 export const ENGINE_CONFIG = {
@@ -32,6 +34,8 @@ export const ENGINE_CONFIG = {
   lateArrivalGraceMinutes: { scheduled_event: 10, bookable_slot: 0, drop_in: 0 },
   /** Only used to test timing when the real minimum duration is unknown; always flagged. */
   assumedMinStayMinutes: 30,
+  /** Added before start when booking is required/unknown and capacity unverified (check-in, queue). */
+  unconfirmedBookingAllowanceMinutes: 5,
   weights: { completeness: 0.35, proximity: 0.35, interest: 0.2, slack: 0.1 },
 } as const;
 
@@ -91,35 +95,46 @@ function normalizeTitle(t: string): string {
     .trim();
 }
 
-/** Same title at the same venue starting at the same instant = same occurrence, whatever the source. */
+/** Records within this distance with the same title and start are the same occurrence. */
+export const DEDUPE_RADIUS_METERS = 100;
+
+/** Title + start part of the identity; place is compared by distance (venue ids are source-specific). */
 export function dedupeKey(c: Candidate): string {
-  return `${normalizeTitle(c.title)}|${c.venue.id}|${c.startsAt ?? "open"}`;
+  return `${normalizeTitle(c.title)}|${c.startsAt ?? "open"}`;
+}
+
+function samePlace(a: Candidate, b: Candidate): boolean {
+  const { lat: aLat, lng: aLng } = a.venue;
+  const { lat: bLat, lng: bLng } = b.venue;
+  if (aLat === null || aLng === null || bLat === null || bLng === null) return a.venue.id === b.venue.id;
+  return haversineMeters({ lat: aLat, lng: aLng }, { lat: bLat, lng: bLng }) <= DEDUPE_RADIUS_METERS;
 }
 
 const PERMISSION_RANK: Record<string, number> = { authorized: 0, synthetic: 1, unverified: 2, denied: 3 };
 
+function preferred(a: Candidate, b: Candidate): boolean {
+  return (
+    PERMISSION_RANK[a.source.permission]! < PERMISSION_RANK[b.source.permission]! ||
+    (a.source.permission === b.source.permission && (a.source.lastSourceUpdate ?? "") > (b.source.lastSourceUpdate ?? ""))
+  );
+}
+
+/** Same title + same start + same place (<=100 m, or same venue id without coordinates) = one occurrence. */
 export function dedupe(candidates: Candidate[]): { kept: Candidate[]; duplicates: Candidate[] } {
-  const best = new Map<string, Candidate>();
+  const groups = new Map<string, Candidate[]>(); // key -> current winners (one per distinct place)
   const duplicates: Candidate[] = [];
   for (const c of candidates) {
     const key = dedupeKey(c);
-    const prev = best.get(key);
-    if (!prev) {
-      best.set(key, c);
-      continue;
-    }
-    const better =
-      PERMISSION_RANK[c.source.permission]! < PERMISSION_RANK[prev.source.permission]! ||
-      (c.source.permission === prev.source.permission &&
-        (c.source.lastSourceUpdate ?? "") > (prev.source.lastSourceUpdate ?? ""));
-    if (better) {
-      duplicates.push(prev);
-      best.set(key, c);
-    } else {
-      duplicates.push(c);
-    }
+    const winners = groups.get(key) ?? [];
+    const i = winners.findIndex((w) => samePlace(w, c));
+    if (i === -1) winners.push(c);
+    else if (preferred(c, winners[i]!)) {
+      duplicates.push(winners[i]!);
+      winners[i] = c;
+    } else duplicates.push(c);
+    groups.set(key, winners);
   }
-  const keptIds = new Set([...best.values()].map((c) => c.occurrenceId));
+  const keptIds = new Set([...groups.values()].flat().map((c) => c.occurrenceId));
   return { kept: candidates.filter((c) => keptIds.has(c.occurrenceId)), duplicates };
 }
 
@@ -178,15 +193,20 @@ function evaluate(c: Candidate, q: ParsedQuery, hardDeadline: string, cfg: Engin
   if (c.source.isDemo || c.source.permission === "synthetic") unknowns.add("synthetic_demo_data");
   if (booking.expired) unknowns.add("availability_snapshot_expired");
 
+  // Booking/check-in time is unknown unless capacity is verified by an authorized source: never 0.
+  const capacityVerified = booking.state === "verified_available" && c.source.permission === "authorized";
+  const allowance = c.requiresBooking !== false && !capacityVerified ? cfg.unconfirmedBookingAllowanceMinutes : 0;
+  const readyAt = addMinutes(arrival, allowance);
+
   // When can the activity actually start for this user?
-  let earliestStart = arrival;
+  let earliestStart = readyAt;
   if (fixedStart) {
     const start = c.startsAt!;
     const grace = cfg.lateArrivalGraceMinutes[c.kind];
-    if (Date.parse(arrival) > Date.parse(addMinutes(start, grace))) return { ok: false, reasons: ["already_started"] };
+    if (Date.parse(readyAt) > Date.parse(addMinutes(start, grace))) return { ok: false, reasons: ["already_started"] };
     if (Date.parse(start) >= Date.parse(latestLeave)) return { ok: false, reasons: ["starts_after_window"] };
-    if (Date.parse(start) > Date.parse(arrival)) earliestStart = start;
-  } else if (c.startsAt && Date.parse(c.startsAt) > Date.parse(arrival)) {
+    if (Date.parse(start) > Date.parse(readyAt)) earliestStart = start;
+  } else if (c.startsAt && Date.parse(c.startsAt) > Date.parse(readyAt)) {
     earliestStart = c.startsAt; // drop-in not open yet when you arrive
   }
 
@@ -210,7 +230,6 @@ function evaluate(c: Candidate, q: ParsedQuery, hardDeadline: string, cfg: Engin
   // Honest labelling of everything we do not know.
   if (c.endTimeQuality === "unknown" || c.endsAt === null) unknowns.add(fixedStart ? "end_time_unknown" : "closing_time_unknown");
   if (c.endTimeQuality === "estimated") unknowns.add("end_time_estimated");
-  const capacityVerified = booking.state === "verified_available" && c.source.permission === "authorized";
   if (!capacityVerified && c.kind !== "drop_in") unknowns.add("capacity_not_verified");
   if (c.kind === "drop_in" && booking.state !== "verified_available" && c.requiresBooking) unknowns.add("capacity_not_verified");
   if (c.requiresBooking === true && !capacityVerified) unknowns.add("booking_required");
@@ -220,9 +239,11 @@ function evaluate(c: Candidate, q: ParsedQuery, hardDeadline: string, cfg: Engin
     endKnown && Date.parse(c.endsAt!) < Date.parse(latestLeave) ? c.endsAt! : latestLeave;
   const minutesAtActivity = Math.floor(minutesBetween(earliestStart, leaveBy));
   const spare = Math.floor(minutesBetween(projectedFinish, latestLeave));
-  const departBy = fixedStart
-    ? addMinutes(c.startsAt!, -outbound)
-    : addMinutes(latestLeave, -(minUsable + outbound));
+  // Latest time to set off from the start point; never in the past (joining within the grace = "leave now").
+  const latestDepart = fixedStart
+    ? addMinutes(c.startsAt!, -(outbound + allowance))
+    : addMinutes(latestLeave, -(minUsable + outbound + allowance));
+  const departBy = Date.parse(latestDepart) < Date.parse(now) ? new Date(Date.parse(now)).toISOString() : latestDepart;
 
   let confidence: ConfidenceLevel;
   if (capacityVerified && endKnown && c.endTimeQuality === "known" && !assumedStay) {

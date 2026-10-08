@@ -100,6 +100,8 @@ export interface SyncRunRow {
   received_count: number;
   accepted_count: number;
   rejected_count: number;
+  /** Records of this source no longer present in a full-snapshot import, removed from public view. */
+  retired_count: number;
   error_summary: Partial<Record<QualityCode | "fetch_error", number>>;
 }
 
@@ -113,6 +115,8 @@ export interface RowResult {
 /** fetch -> validate raw -> normalize -> (dedupe/upsert/audit handled by runSync). */
 export interface SourceAdapter<Raw> {
   readonly sourceName: string;
+  /** True when each fetch returns the complete current set (e.g. a curated CSV): missing records get retired. */
+  readonly fullSnapshot: boolean;
   fetch(signal: AbortSignal): Promise<Raw[]>;
   /** Validate and normalize one raw row. Must be pure and deterministic for a given `now`. */
   normalize(raw: Raw, ctx: { now: string; index: number }): { record: NormalizedRecord | null; issues: QualityIssue[] };
@@ -122,4 +126,9 @@ export interface RecordStore {
   /** Idempotent upsert keyed by the stable ids. Returns nothing; must not create duplicates. */
   upsert(records: NormalizedRecord[]): Promise<void>;
   recordSyncRun(run: SyncRunRow): Promise<void>;
+  /** Cross-process lock per source (e.g. Postgres advisory lock). Returns false if already held. */
+  tryLock?(sourceName: string): Promise<boolean>;
+  unlock?(sourceName: string): Promise<void>;
+  /** Remove source records of `sourceName` last seen before `seenAt` (no longer public). Returns count. */
+  retireMissing?(sourceName: string, seenAt: string): Promise<number>;
 }

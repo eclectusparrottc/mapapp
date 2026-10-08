@@ -33,10 +33,11 @@ Lovable Cloud DB is **not enabled** on project `b457e132…`, and we must not en
 ## Consequences
 - G3 is blocked until the Owner creates `citygap-dev`. All backend code is tested on PGlite (real Postgres in
   WASM) instead.
-- **Open item to check on hosted Supabase:** `source_records` has FORCE RLS and no policies.
-  `is_public_occurrence()` can therefore only see rows if the function owner (the migration role) bypasses RLS. In
-  PGlite the owner is a superuser, so tests pass. On Supabase we must confirm the `postgres` role has `BYPASSRLS`.
-  If it does not, nothing becomes public. (Unverified.)
+- RLS is **enabled but not FORCEd**, so the table owner (migration/importer role) and the SECURITY DEFINER helpers
+  `is_public_occurrence()` / `occurrence_public_source()` see all rows without needing `BYPASSRLS`. The DB tests run
+  the migration and the importer as a **non-superuser, non-bypassrls owner role** (`tests/pgliteDb.ts`), and a
+  mutation check confirmed that re-adding FORCE on `source_records` makes every public row disappear (tests fail).
+  Still to confirm on the real Supabase project at G3.
 - Before a public Beta we need a separate production project and a migration path.
 
 ## Alternatives considered

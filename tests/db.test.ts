@@ -73,6 +73,29 @@ describe("Supabase schema + RLS (migration rebuilt from zero)", () => {
     }
   });
 
+  it("retired records disappear from the public view; advisory lock is acquired and released", async () => {
+    const store = new PgStore(db);
+    expect(await store.tryLock("lock-test")).toBe(true);
+    await store.unlock("lock-test");
+    const withoutGallery = csvText
+      .split("\n")
+      .filter((l) => !l.startsWith("csv-gallery,"))
+      .join("\n");
+    const { run } = await runSync(csvAdapter("curated-csv", async () => withoutGallery), store, {
+      now: "2026-10-10T13:00:00Z",
+    });
+    expect(run.retired_count).toBe(1);
+    const ids = await asRole("anon", async () =>
+      (await db.query<{ occurrence_id: string }>("select occurrence_id from public.public_occurrences_v1")).rows.map(
+        (r) => r.occurrence_id,
+      ),
+    );
+    expect(ids).not.toContain("curated-csv:csv-gallery:2026-10-10");
+    expect(ids).toHaveLength(5);
+    const runs = await db.query<{ retired_count: number }>("select retired_count from public.sync_runs order by started_at desc limit 1");
+    expect(runs.rows[0]!.retired_count).toBe(1);
+  });
+
   it("database constraints reject dishonest data", async () => {
     await expect(
       db.query(

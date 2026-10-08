@@ -88,10 +88,31 @@ export class PgStore implements RecordStore {
   async recordSyncRun(run: SyncRunRow & { error_message?: string }): Promise<void> {
     await this.db.query(
       `insert into public.sync_runs (id, source_name, started_at, finished_at, status, received_count,
-         accepted_count, rejected_count, error_summary, error_message)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10)`,
+         accepted_count, rejected_count, retired_count, error_summary, error_message)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11)`,
       [run.id, run.source_name, run.started_at, run.finished_at, run.status, run.received_count,
-        run.accepted_count, run.rejected_count, JSON.stringify(run.error_summary), run.error_message ?? null],
+        run.accepted_count, run.rejected_count, run.retired_count, JSON.stringify(run.error_summary),
+        run.error_message ?? null],
     );
+  }
+
+  /** Session-level advisory lock keyed by source name: blocks a second importer process or cron worker. */
+  async tryLock(sourceName: string): Promise<boolean> {
+    const { rows } = await this.db.query("select pg_try_advisory_lock(hashtext('citygap-sync:' || $1)) as ok", [sourceName]);
+    return (rows[0] as { ok: boolean }).ok;
+  }
+
+  async unlock(sourceName: string): Promise<void> {
+    await this.db.query("select pg_advisory_unlock(hashtext('citygap-sync:' || $1))", [sourceName]);
+  }
+
+  async retireMissing(sourceName: string, seenAt: string): Promise<number> {
+    const { rows } = await this.db.query(
+      `with gone as (
+         delete from public.source_records where source_name = $1 and last_seen_at < $2::timestamptz returning 1
+       ) select count(*)::int as n from gone`,
+      [sourceName, seenAt],
+    );
+    return (rows[0] as { n: number }).n;
   }
 }

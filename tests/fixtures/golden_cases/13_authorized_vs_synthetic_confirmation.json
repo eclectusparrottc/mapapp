@@ -1,8 +1,8 @@
 { "name": "Only an authorized, unexpired 'verified_available' snapshot earns the confirmed label",
   "query": { "mode": "free_time", "now": "2026-10-11T00:45:00Z", "origin": {"label":"Downtown Vancouver (sample start)","lat":49.2811,"lng":-123.1145,"isSample":false}, "freeMinutes": 90 },
   "candidates": [
-    { "id": "vr_authorized", "kind": "bookable_slot", "venue": "dt_gastown", "startsAt": "2026-10-11T01:00:00Z", "endsAt": "2026-10-11T01:20:00Z", "durMin": 20, "booking": "verified_available", "verifiedAt": "2026-10-11T00:40:00Z", "expiresAt": "2026-10-11T01:00:00Z", "permission": "authorized", "url": "https://example.org/vr", "requiresBooking": true },
-    { "id": "vr_synthetic", "title": "VR booth B", "kind": "bookable_slot", "venue": "dt_gastown", "startsAt": "2026-10-11T01:00:00Z", "endsAt": "2026-10-11T01:20:00Z", "durMin": 20, "booking": "verified_available", "requiresBooking": true }
+    { "id": "vr_authorized", "kind": "bookable_slot", "venue": "dt_gastown", "startsAt": "2026-10-11T01:10:00Z", "endsAt": "2026-10-11T01:30:00Z", "durMin": 20, "booking": "verified_available", "verifiedAt": "2026-10-11T00:40:00Z", "expiresAt": "2026-10-11T01:10:00Z", "permission": "authorized", "url": "https://example.org/vr", "requiresBooking": true },
+    { "id": "vr_synthetic", "title": "VR booth B", "kind": "bookable_slot", "venue": "dt_gastown", "startsAt": "2026-10-11T01:10:00Z", "endsAt": "2026-10-11T01:30:00Z", "durMin": 20, "booking": "verified_available", "requiresBooking": true }
   ],
   "expect": { "status": "ok", "topIds": ["vr_authorized", "vr_synthetic"],
     "recs": {

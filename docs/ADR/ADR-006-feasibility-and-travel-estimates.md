@@ -42,12 +42,16 @@ must be honest about what it is.
   time (`not_enough_time` / `closes_too_soon`), or after `latest_leave` (`not_enough_time`).
 - **Outputs:**
   - `recommendedLeaveBy = min(known end, latest_leave)`
-  - `departBy = start − outbound` (fixed start), or `latest_leave − (min_usable + outbound)` (drop-in)
+  - `allowance = 5 min` when booking is required or unknown and capacity is not verified by an authorized source
+    (`unconfirmedBookingAllowanceMinutes`); added before the activity can start — unknown booking time is never 0
+  - `departBy = max(now, start − outbound − allowance)` (fixed start), or
+    `max(now, latest_leave − (min_usable + outbound + allowance))` (drop-in)
   - `spareMinutes = latest_leave − projected_finish`
 - **Hard rejections, checked before any timing:** permission not public, cancelled or postponed, full or unavailable
   (after expiry handling), missing or out-of-area coordinates, a fixed start with no start time, already ended.
-- **Dedupe:** the key is `normalized title | venue.id | startsAt`. The kept record is the better permission, then
-  the fresher `last_source_update`.
+- **Dedupe:** same normalized title + same `startsAt` + same place (≤ `DEDUPE_RADIUS_METERS` = 100 m by haversine;
+  venue id only when a record has no coordinates), so the same event from two sources merges even though venue ids
+  are source-prefixed. The kept record is the better permission, then the fresher `last_source_update`.
 
 ## Decision: time handling (`src/domain/time.ts`)
 - All computation is done on UTC instants. Display uses `America/Vancouver`, always with a zone label. Wall-clock
@@ -99,15 +103,13 @@ Sort by fit tier, then score descending, then `occurrenceId`. The top 3 are show
 - Every recommendation says `~N min walk (est.)`. The UI must never call it a route time or attach a provider name.
   A later Matrix API may refine only the Top-N, and only after a new ADR.
 - **Directive deviations to note:**
-  - Ranking has no "freshness" factor (P1.4 lists distance, interest and freshness).
-  - Completeness is a weighted term, not a strict sort key.
-  - The directive says unknown queueing or booking must not count as 0. The engine adds no queueing time. It only
-    flags `booking_*` and relies on the safety margin.
-  - Records with no coordinates are rejected outright instead of being listed without a distance rank.
-  - For a scheduled event joined within the late-arrival grace, `departBy` can fall before `now`
-    (`feasibility.ts:223-225`).
-- The weights can be passed in through `cfg`, but they have **no direct unit test**. Ordering is checked only
-  indirectly through golden `topIds` (05, 13, 16).
+  - Ranking has no "experience freshness" factor yet (P1.4): there is no per-user history in Phase 1 (no accounts),
+    so it would be invented. DEFERRED to Phase 2 with opt-in local history.
+  - Completeness is a weighted term (0.35), not a strict sort key; tier (fits > fits_partially) is the strict key.
+  - Records with no coordinates cannot be checked for feasibility, so they are never *recommended*; they are
+    returned in `rejected` with `missing_coordinates` so the UI can list them under "Location not published".
+- Weights have direct unit tests (`tests/ranking.test.ts`: sum to 1, proximity/interest/slack monotonicity,
+  determinism); golden case 18 covers the booking allowance.
 
 ## Alternatives considered
 - **Routing API in Phase 1.** Adds cost, keys and terms, and is not needed for an honest estimate. Deferred.

@@ -153,7 +153,7 @@ export function buildDemoCandidates(now: string, horizonHours = 30): Candidate[]
         }
         const key = `${date}T${start ?? "open"}`;
         out.push({
-          occurrenceId: `${t.id}@${key}`,
+          occurrenceId: `${t.id}:${key}`,
           activityId: t.id,
           title: t.title,
           kind: t.kind,
@@ -168,7 +168,11 @@ export function buildDemoCandidates(now: string, horizonHours = 30): Candidate[]
           endTimeQuality: t.endQuality,
           cancellationStatus: t.cancellation ?? "scheduled",
           requiresBooking: t.requiresBooking,
-          availability: { state: t.booking, verifiedAt: null, expiresAt: null, verificationSource: "synthetic" },
+          // A "verified" state always carries evidence + expiry (same rule as the DB check constraint).
+          availability:
+            t.booking === "verified_available" && startsAt
+              ? { state: t.booking, verifiedAt: addMinutes(startsAt, -120), expiresAt: startsAt, verificationSource: "synthetic" }
+              : { state: t.booking === "verified_available" ? "unknown" : t.booking, verifiedAt: null, expiresAt: null, verificationSource: "synthetic" },
           source: {
             name: t.edge === "duplicate" ? `${DEMO_SOURCE_NAME}-feed-b` : DEMO_SOURCE_NAME,
             externalId: `${t.id}:${key}`,
@@ -186,7 +190,7 @@ export function buildDemoCandidates(now: string, horizonHours = 30): Candidate[]
       const extras = out.filter((c, i) => c.activityId === t.id && i !== firstForTemplate);
       for (const e of extras) out.splice(out.indexOf(e), 1);
       const kept = out[firstForTemplate];
-      if (kept) kept.occurrenceId = `${t.id}@open`;
+      if (kept) kept.occurrenceId = `${t.id}:open`;
     }
   }
   return out;

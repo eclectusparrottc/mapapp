@@ -1,0 +1,9 @@
+{ "name": "Unconfirmed booking/check-in time is never zero: a slot you'd only reach at the exact start is excluded",
+  "query": { "mode": "free_time", "now": "2026-10-11T00:45:00Z", "origin": {"label":"Downtown Vancouver (sample start)","lat":49.2811,"lng":-123.1145,"isSample":false}, "freeMinutes": 90 },
+  "candidates": [
+    { "id": "slot_needs_booking", "kind": "bookable_slot", "venue": "dt_plaza", "startsAt": "2026-10-11T00:55:00Z", "endsAt": "2026-10-11T01:25:00Z", "durMin": 30, "requiresBooking": true },
+    { "id": "slot_booking_unknown", "title": "Slot B", "kind": "bookable_slot", "venue": "dt_plaza", "startsAt": "2026-10-11T00:55:00Z", "endsAt": "2026-10-11T01:25:00Z", "durMin": 30, "requiresBooking": null },
+    { "id": "walk_in", "title": "Walk-in table", "kind": "bookable_slot", "venue": "dt_plaza", "startsAt": "2026-10-11T00:55:00Z", "endsAt": "2026-10-11T01:25:00Z", "durMin": 30, "requiresBooking": false }
+  ],
+  "expect": { "status": "ok", "topIds": ["walk_in"],
+    "rejected": { "slot_needs_booking": ["already_started"], "slot_booking_unknown": ["already_started"] } } }

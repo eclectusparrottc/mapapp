@@ -93,6 +93,7 @@ create table public.sync_runs (
   received_count   integer not null default 0 check (received_count >= 0),
   accepted_count   integer not null default 0 check (accepted_count >= 0),
   rejected_count   integer not null default 0 check (rejected_count >= 0),
+  retired_count    integer not null default 0 check (retired_count >= 0),
   error_summary    jsonb not null default '{}'::jsonb,
   error_message    text
 );
@@ -136,6 +137,8 @@ as $$
 $$;
 revoke all on function public.occurrence_public_source(text) from public;
 
+-- RLS is enabled (not FORCEd): the table owner (migration/importer role) and the SECURITY DEFINER
+-- helpers above must see all rows; client roles are always subject to the policies below.
 alter table public.venues                 enable row level security;
 alter table public.activities             enable row level security;
 alter table public.occurrences            enable row level security;
@@ -143,12 +146,6 @@ alter table public.availability_snapshots enable row level security;
 alter table public.source_records         enable row level security;
 alter table public.sync_runs              enable row level security;
 
-alter table public.venues                 force row level security;
-alter table public.activities             force row level security;
-alter table public.occurrences            force row level security;
-alter table public.availability_snapshots force row level security;
-alter table public.source_records         force row level security;
-alter table public.sync_runs              force row level security;
 
 -- Start from zero privileges for client roles, then grant SELECT only where needed.
 revoke all on all tables in schema public from anon, authenticated;
