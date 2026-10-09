@@ -1,3 +1,7 @@
+> **Moved.** This repository is archived. The CityGap core, backend, tests and docs now live in
+> [`eclectusparrottc/citytime-connect`](https://github.com/eclectusparrottc/citytime-connect) under `core/`
+> (merged in PR #4, `37ed637`). Make changes there; this copy is no longer maintained.
+
 # CityGap — Phase 1 core
 
 > "You have time before your next plan. Here's what actually fits."
