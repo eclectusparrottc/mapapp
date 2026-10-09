@@ -9,9 +9,9 @@ Gates G0–G2 are being worked in parallel with the G3/G5 *code*. Each claim bel
 | Gate | Status | Evidence / gap |
 |---|---|---|
 | G0 Segment + env report | IN_REVIEW | `docs/SEGMENT_ANALYSIS.md` (Beachhead A, 3.60, hypothesis); `docs/PREFLIGHT.md` (real MCP calls) |
-| G1 Lovable UI + Git Sync + CI | BLOCKED (partly) | Lovable project exists and has built. Core-repo CI is green (run 3+). Lovable GitHub Git Sync needs the Owner (CG-004). The preview URL is unreachable from the agent (egress 403). |
-| G2 Demo map + both paths | IN_PROGRESS | Independent review of `fdbe86c`: **FAIL**, no P0 issues. The causes were lint (182 prettier errors), map never verified because tiles are blocked, missing drawer actions, and P1 logic bugs. Fix unit CG-011 + ADR-009 was sent to Lovable on 2026-10-09 and is being built now. |
-| G3 Supabase + API + CSV | IN_REVIEW (code) / BLOCKED (project) | Migration + RLS + API + CSV import are tested on Postgres (PGlite) as a non-superuser owner. Owner Supabase project `citygap-dev` does not exist yet. |
+| G1 Lovable UI + Git Sync + CI | IN_REVIEW | Owner connected Git Sync on 2026-10-09: private repo `eclectusparrottc/citytime-connect`, HEAD `2f2d864` = the Lovable commit. UI CI is on branch `claude/g2-polish-ci` (`4519bee`). Core-repo CI is green. |
+| G2 Demo map + both paths | IN_REVIEW | Re-review of `2f2d864`: **PASS_WITH_NONBLOCKING_ISSUES**. Lint, tsc, vitest (7) and build all pass. Browser checks at 360/390/1280 covered map-first, tabs, before-mode past-time handling, detail dialog, share without coordinates, and rejected items never shown. Core files match the core repo after prettier. Remaining P1/P2 issues are fixed on `claude/g2-polish-ci`. Map tile rendering and attribution are still unverified (tiles blocked here); check on a phone. |
+| G3 Supabase + API + CSV | IN_REVIEW (code) / waiting on Owner | A Supabase project is now connected to Lovable (ref `ddidpdthwmpisgzuekbu`). Still unknown: whether it is the Owner's own project or Lovable Cloud. The migration has not been applied; it needs Owner approval. |
 | G4 Licensed real source | BLOCKED | No license or terms accepted (Ticketmaster: not applied). Only the demo and CSV paths exist. |
 | G5 Feasibility + Top 3 | IN_REVIEW (core) / IN_PROGRESS (UI) | 18 golden cases plus ranking, DB, API and adapter tests: 78 tests passing. The UI port of the core is in progress (CG-011). |
 | G6 Review + publish | NOT_STARTED | Publishing requires explicit Owner approval. |
